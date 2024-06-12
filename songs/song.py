@@ -88,6 +88,25 @@ def remove_song_from_db(song_id):
         conn.commit()
 
     conn.close()
+    
+def remove_artist_from_db(artist_id):
+    conn = sqlite3.connect('playlist.db')
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM artists WHERE id=?", (artist_id,))
+    conn.commit()
+
+    # Retrieve all remaining artists after deletion
+    cursor.execute("SELECT id FROM artists")
+    remaining_artists = cursor.fetchall()
+
+    # Reposition artist IDs
+    for idx, artist in enumerate(remaining_artists, start=1):
+        cursor.execute("UPDATE artists SET id=? WHERE id=?", (idx, artist[0]))
+        conn.commit()
+
+    conn.close()
+
 
 
 class Playlist:
@@ -106,6 +125,15 @@ class Playlist:
             print("Playlist:")
             for song in songs:
                 print(f"{song[0]}. {song[1]} - {song[2]}")
+                
+    def list_artists(self):
+        artists = list_artists_from_db()
+        if not artists:
+         print("No favorite artists.")
+        else:
+          print("Favorite Artists:")
+        for artist in artists:
+            print(f"{artist[0]}. {artist[1]}")
 
     def search_song(self, title):
         songs = search_song_by_title(title)
@@ -118,6 +146,9 @@ class Playlist:
 
     def remove_song(self, song_id):
         remove_song_from_db(song_id)
+        
+    def remove_artist(self, artist_id):
+        remove_artist_from_db(artist_id)
 
     def list_songs_by_genre(self, genre):
         conn = sqlite3.connect('playlist.db')
@@ -153,8 +184,9 @@ def main():
         print("4. Remove a song from the playlist")
         print("5. Add a favorite artist")
         print("6. List favorite artists")
-        print("7. List songs by genre")
-        print("8. Exit")
+        print("7. Remove an artist from the playlist")
+        print("8. List songs by genre")
+        print("9. Exit")
 
         choice = input("Enter your choice: ")
 
@@ -184,9 +216,14 @@ def main():
                 for artist in artists:
                     print(f"{artist[0]}. {artist[1]}")
         elif choice == "7":
+             playlist.list_artists()
+             artist_id = int(input("Enter the ID of the artist to remove: "))  
+             playlist.remove_artist(artist_id)  
+
+        elif choice == "8":
             genre = input("Enter the genre to list songs: ")
             playlist.list_songs_by_genre(genre)
-        elif choice == "8":
+        elif choice == "9":
             print("Goodbye!")
             break
         else:
